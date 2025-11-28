@@ -78,10 +78,9 @@ app.post('/auth/:action', async (req, res) => {
 // Listar todas as salas
 app.get('/salas', async (req, res) => {
     try {
-        
         const headers = req.headers.authorization ? { Authorization: req.headers.authorization } : {};
         const response = await axios.get(`${DJANGO_URL}/salas/`, { headers, params: req.query });
-a
+        
         if (response.data.results) {
             response.data.results = response.data.results.map(sala => addHateoas('salas', sala));
         }
@@ -108,7 +107,6 @@ app.get('/salas/:id', async (req, res) => {
     try {
         const headers = req.headers.authorization ? { Authorization: req.headers.authorization } : {};
         const response = await axios.get(`${DJANGO_URL}/salas/${req.params.id}/`, { headers });
-        
         res.json(addHateoas('salas', response.data));
     } catch (error) {
         res.status(error.response?.status || 500).json(error.response?.data);
@@ -264,7 +262,25 @@ app.get('/relatorios/sala/:id', (req, res) => {
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`Gateway rodando em: http://localhost:${PORT}`);
-    console.log(`Conectado ao Django em: ${DJANGO_URL}`);
+
+const server = app.listen(PORT, () => {
+    console.log(`🚀 Gateway rodando em: http://localhost:${PORT}`);
+    console.log(`🔗 Conectado ao Django em: ${DJANGO_URL}`);
+});
+
+server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+        console.error(`❌ ERRO FATAL: A porta ${PORT} já está sendo usada por outro programa.`);
+        console.error(`👉 Solução: Edite o arquivo gateway/.env e mude PORT para 3001.`);
+    } else {
+        console.error("❌ Erro no servidor:", error);
+    }
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('❌ ERRO CRÍTICO NÃO TRATADO:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('❌ PROMESSA REJEITADA:', reason);
 });

@@ -228,7 +228,7 @@ O Python 3.13 removeu módulos legados que o Spyne tentava importar internamente
 
 ### A Solução (Monkey Patch no `manage.py`)
 
-Para não violar a integridade da biblioteca editando seus arquivos fonte, aplicamos um "patch" no ponto de entrada da aplicação (`manage.py`).
+Para não violar a integridade da biblioteca editando seus arquivos fonte, foi aplicado um "patch" no ponto de entrada da aplicação (`manage.py`).
 
 ```python
 # Em manage.py

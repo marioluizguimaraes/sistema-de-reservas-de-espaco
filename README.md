@@ -53,28 +53,38 @@ O sistema utiliza uma **arquitetura híbrida**, unindo:
 ## 3.1 **Backend — Django REST Framework (API REST)**
 
 ```
-backend/
-│ manage.py
-│ requirements.txt
-├── core/                 ← configurações do projeto
+projeto_kanban/
+│
+├── projeto_kanban/             # Configurações do Projeto Django (Core)
+│   ├── __init__.py
+│   ├── asgi.py
 │   ├── settings.py
 │   ├── urls.py
 │   └── wsgi.py
-├── accounts/             ← módulo de usuários e autenticação
-│   ├── models.py
-│   ├── serializers.py
-│   ├── views.py
-│   └── urls.py
-├── rooms/
-│   ├── models.py         ← Sala
-│   ├── serializers.py
-│   ├── views.py
-│   └── urls.py
-└── reservations/
-    ├── models.py         ← Reserva
-    ├── serializers.py
-    ├── views.py
-    └── urls.py
+│
+├── api/                        # O Novo Aplicativo Django ('api')
+│   ├── __init__.py
+│   ├── admin.py                # Registros de Modelos para o Admin do Django
+│   ├── apps.py                 # Configuração do App
+│   ├── migrations/             # Arquivos de Migração
+│   │   ├── __init__.py
+│   │   └── 0001_initial.py
+│   ├── models/                 # Definições dos Modelos (Sala, Reserva, etc.)
+│   │   ├── __init__.py
+│   │   ├── sala.py
+│   │   └── reserva.py
+│   ├── serializers/            # Serializers do Django REST Framework
+│   │   ├── __init__.py
+│   │   ├── salaSerializer.py
+│   │   └── reservaSerializer.py
+│   ├── tests.py                # Testes da Aplicação
+│   ├── urls.py                 # URLs e Rotas da API
+│   └── views/                  # ViewSets do Django REST Framework
+│       ├── __init__.py
+│       ├── salaViewset.py
+│       └── reservaViewset.py
+│
+└── manage.py                   # Utilitário de linha de comando do Django
 ```
 
 ## 3.2 **Backend — Serviço SOAP**

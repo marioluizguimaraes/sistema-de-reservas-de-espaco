@@ -34,7 +34,8 @@ class Reserva(models.Model):
 
     class Meta:
         ordering = ['-criado_em']
-
+        db_table = "reservas"
+        
     def __str__(self):
         return f"Reserva {self.id} - {self.sala.nome} ({self.status})"
     

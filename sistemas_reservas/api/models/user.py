@@ -8,5 +8,8 @@ class CustomUser(AbstractUser):
     
     email = models.EmailField(unique=True)
 
+    class Meta:
+        db_table = "usuarios"
+
     def __str__(self):
         return self.username

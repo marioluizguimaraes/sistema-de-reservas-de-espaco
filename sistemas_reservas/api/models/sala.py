@@ -23,6 +23,7 @@ class Sala(models.Model):
     class Meta:
         verbose_name = "Sala"
         verbose_name_plural = "Salas"
+        db_table = "salas"
 
     def __str__(self):
         return f"{self.nome} ({self.cidade}/{self.estado})"

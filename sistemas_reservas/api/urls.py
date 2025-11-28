@@ -4,7 +4,8 @@ from api.views import SalaViewSet, ReservaViewSet, RegisterView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 router = DefaultRouter()
-router.register(r'salas', SalaViewSet)
+
+router.register(r'salas', SalaViewSet, basename='sala')
 router.register(r'reservas', ReservaViewSet, basename='reserva')
 
 urlpatterns = [

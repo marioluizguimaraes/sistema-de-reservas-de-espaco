@@ -1,13 +1,3 @@
-from .projetoSerializer import ProjetoSerializer
-from .colunaSerializer import ColunaSerializer
-from .tarefaSerializer import TarefaSerializer
-from .etiquetaSerializer import EtiquetaSerializer
-from .comentarioSerializer import ComentarioSerializer
-
-__all__ = [
-    "ProjetoSerializer",
-    "ColunaSerializer",
-    "TarefaSerializer",
-    "EtiquetaSerializer",
-    "ComentarioSerializer",
-]
+from .user_serializer import UserSerializer
+from .sala_serializer import SalaSerializer
+from .reserva_serializer import ReservaSerializer

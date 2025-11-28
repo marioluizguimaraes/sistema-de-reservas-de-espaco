@@ -1,12 +1,3 @@
-from .projetoViewset import ProjetoViewSet
-from .colunaViewset import ColunaViewSet
-from .tarefaViewset import TarefaViewSet
-from .comentarioViewset import ComentarioViewSet
-from .etiquetaViewset import EtiquetaViewSet  
-__all__ = [
-    "ProjetoViewSet",
-    "ColunaViewSet",
-    "TarefaViewSet",
-    "ComentarioViewSet",
-    "EtiquetaViewSet", 
-]
+from .user_viewset import RegisterView
+from .sala_viewset import SalaViewSet
+from .reserva_viewset import ReservaViewSet

@@ -1,262 +1,157 @@
-- Tema: **Sistema de Reservas de Salas / Estúdios / Salão de Eventos**
-- API REST em Django REST Framework
-- Serviço SOAP integrado
-- API Gateway em Node.js (com HATEOAS)
-- Modelagem dos dados
-- Estrutura dos projetos
-- Requisitos funcionais e não funcionais
-- Explicação da arquitetura
-- Fluxos principais
-- Autenticação (Cadastro, Login e Logout)
+# 📘 Documentação Técnica de Arquitetura e Engenharia de Software
 
+## 1\. Visão Geral da Solução
 
----
+O **Sistema de Reservas** é uma aplicação backend desenvolvida em **Python 3.13** utilizando o framework **Django**. A sua principal característica arquitetural é o modelo **Híbrido**, expondo simultaneamente:
 
-# 📘 **DOCUMENTAÇÃO DO SISTEMA DE RESERVA DE SALAS / ESTÚDIOS / SALÃO DE EVENTOS**
+1.  Uma **API RESTful** para operações transacionais (CRUD de usuários, salas e reservas).
+2.  Um **Serviço SOAP** para operações de relatórios e agregação de dados complexos.
 
+O sistema opera no modelo de negócios "Marketplace de Espaços" (estilo Airbnb), onde usuários podem atuar tanto como locadores (donos de salas) quanto locatários (solicitantes).
 
-# 1. 🎯 **Descrição Geral do Sistema**
+-----
 
-O Sistema de Reservas de Salas é uma plataforma que permite que usuários realizem:
+## 2\. Stack Tecnológica
 
-* Cadastro e autenticação
-* Consulta de salas disponíveis
-* Solicitação de reservas
-* Visualização das suas reservas
-* Geração de relatórios via SOAP
-* Utilização do sistema através de um API Gateway em Node.js
-* Consumo padronizado via front-end web
+  * **Linguagem:** Python 3.13
+  * **Core Framework:** Django 5.2.8
+  * **REST API:** Django REST Framework (DRF) 3.16 + SimpleJWT (Autenticação)
+  * **SOAP API:** Spyne 2.14.0 (com patch de compatibilidade)
+  * **Banco de Dados:** PostgreSQL (driver `psycopg2-binary`)
+  * **Documentação:** Drf-yasg (Swagger/Redoc)
+  * **Parser XML:** Lxml 6.0
 
-O sistema utiliza uma **arquitetura híbrida**, unindo:
+-----
 
-* **REST (Django REST Framework) para operações CRUD**
-* **SOAP (serviço adicional no backend) para consultas avançadas**
-* **Gateway Node.js** para unificação, autenticação centralizada e HATEOAS
+## 3\. Arquitetura de Software
 
-# 2. 🏗 **Arquitetura Geral**
+O projeto segue o padrão **MVT (Model-View-Template)** do Django, adaptado para APIs, onde a camada de "Template" é substituída por **Serializers**. Além disso, foi introduzida uma camada de **Services** para isolar regras de negócio complexas.
 
-```
-┌─────────────────────┐        ┌─────────────────────────┐
-│    Front-End Web    │ <----> │ API Gateway (Node.js)   │
-└─────────────────────┘        └───────────┬─────────────┘
-                                           │
-                               ┌───────────┴───────────┐
-                               │                       │
-               ┌───────────────▼────────────┐   ┌──────▼──────────────┐
-               │ API REST (Django REST)     │   │ Serviço SOAP        │
-               │ CRUD + Auth + Reservas     │   │ Relatórios          │
-               └────────────────────────────┘   └─────────────────────┘
-```
+### 3.1 Estrutura de Módulos
 
-Funções do Gateway:
+A aplicação está contida no módulo `api`, organizado da seguinte forma para garantir a separação de responsabilidades:
 
-* Gerenciar autenticação unificada
-* Encaminhar chamadas ao REST
-* Intermediar chamadas SOAP
-* Injetar **HATEOAS** em todas as respostas
-* Realizar validação de tokens
+  * **`models/`**: Definições das tabelas do banco de dados (ORM).
+  * **`serializers/`**: Responsável pela validação de dados e transformação (Serialização/Deserialização) de objetos Python para JSON.
+  * **`views/`**: *ViewSets* que gerenciam o ciclo de vida da requisição HTTP (recebem o request, chamam o serializer/service e retornam o response).
+  * **`services/`**: Camada isolada de lógica de negócio (ex: verificação de disponibilidade). Evita "Fat Models" ou lógica excessiva nas Views.
+  * **`soap_service.py`**: Contém a definição da aplicação Spyne, modelos complexos SOAP e os métodos RPC.
 
-# 4. 🧩 **Modelagem de Dados**
+### 3.2 Fluxo de Dados (Data Flow)
 
-## 4.1 **Modelo: User (accounts_user)**
+1.  **Entrada:** O `urls.py` encaminha a requisição para a View correta.
+2.  **Processamento:**
+      * A **View** verifica a autenticação (JWT) e permissões.
+      * O **Serializer** valida o formato dos dados.
+      * O **Service** executa validações de negócio (ex: checar conflito de horário).
+3.  **Persistência:** O **Model** interage com o banco de dados.
+4.  **Saída:** O objeto é serializado e retornado como JSON (REST) ou XML (SOAP).
 
-**Relacionamentos**: nenhum além do padrão
+-----
 
-Atributos:
+## 4\. Modelagem de Dados (ORM)
 
-* id (PK)
-* nome
-* email (único)
-* senha (hash)
-* criado_em
-* atualizado_em
+O banco de dados foi estruturado com três entidades principais, utilizando a integridade referencial do Django.
 
-## 4.2 **Modelo: Sala (rooms_room)**
+### 4.1 Entidade: Usuário (`CustomUser`)
 
-Atributos:
+Estende o `AbstractUser` padrão do Django para incluir dados fiscais e de contato.
 
-* id (PK)
-* nome
-* capacidade
-* descrição
-* localização
-* disponível (bool)
-* criado_em
-* atualizado_em
+  * **Tabela:** `usuarios`
+  * **Campos Personalizados:** `cpf` (único), `celular`, `foto_url`.
+  * **Decisão de Design:** A separação em arquivo próprio (`api/models/user.py`) facilita a manutenção caso o sistema de autenticação cresça.
 
-## 4.3 **Modelo: Reserva (reservations_reservation)**
+### 4.2 Entidade: Sala (`Sala`)
 
-**Relacionamentos**:
+Representa o imóvel ou espaço disponível.
 
-* user  → FK para `User`
-* room  → FK para `Sala`
+  * **Tabela:** `salas`
+  * **Relacionamento:** `ForeignKey` para `CustomUser` (campo `dono`).
+      * *Cardinalidade:* Um Usuário pode ter N Salas. Uma Sala pertence a 1 Usuário.
+  * **Dados:** Endereço completo, preço por hora, capacidade e status de disponibilidade.
 
-Atributos:
+### 4.3 Entidade: Reserva (`Reserva`)
 
-* id (PK)
-* user_id (FK)
-* room_id (FK)
-* data_inicio (datetime)
-* data_fim (datetime)
-* status (pendente, confirmada, cancelada)
-* criada_em
-* atualizada_em
+A entidade associativa que liga um usuário a uma sala em um determinado tempo.
 
-# 5. 🔐 **Autenticação e Segurança**
+  * **Tabela:** `reservas`
+  * **Relacionamentos:**
+      * `ForeignKey` para `Sala` (`reservas_recebidas`).
+      * `ForeignKey` para `CustomUser` (`solicitante`).
+  * **Máquina de Estados:** O campo `status` implementa um fluxo de aprovação:
+      * `PENDENTE_APROVACAO` ➝ `APROVADA` ou `REJEITADA`.
+      * Permite também `CANCELADA` ou `CONCLUIDA`.
+  * **Regra de Negócio (Campo Calculado):** O método `calcular_valor_total()` utiliza o preço da sala e a diferença de tempo (`data_fim - data_inicio`) para persistir o valor final.
 
-A API REST implementa **JWT**.
-Fluxo:
+-----
 
-1. **Cadastro**
-2. **Login → retorna token JWT**
-3. **Todas as operações (exceto login/cadastro) exigem token**
-4. **Logout** é feito invalidando o token (no gateway ou blacklist opcional)
+## 5\. Implementação SOAP
 
-O **Gateway Node** valida o token antes de redirecionar qualquer requisição.
+A camada SOAP foi implementada utilizando a biblioteca **Spyne**, integrada ao Django através de uma View wrapper.
 
+### 5.1 Protocolo e Definição
 
-# 6. 🧭 **Endpoints da API (REST)**
+  * **Protocolo:** SOAP 1.1.
+  * **Transporte:** HTTP (via Django WSGI).
+  * **Validação:** Lxml (garante que o XML de entrada respeite o schema).
 
-## 6.1 **Endpoints de autenticação**
+### 5.2 Tipos Complexos (`ComplexModel`)
 
-| Método | Endpoint              | Descrição           |
-| ------ | --------------------- | ------------------- |
-| POST   | `/api/auth/register/` | Cadastro            |
-| POST   | `/api/auth/login/`    | Login (retorna JWT) |
-| POST   | `/api/auth/logout/`   | Invalida token      |
+Ao contrário de serviços SOAP simples que retornam strings, este sistema implementa o **Objeto de Transferência de Dados (DTO)** chamado `SoapReservaRelatorio`.
+Isso permite que o cliente receba uma estrutura hierárquica contendo:
 
-## 6.2 **Endpoints de salas**
+  * Dados da Reserva (Datas, Valor, Status).
+  * Dados do Solicitante (Nome, CPF, Celular).
+  * Dados Calculados (Duração em horas).
 
-| Método | Endpoint           | Descrição     |
-| ------ | ------------------ | ------------- |
-| GET    | `/api/rooms/`      | Listar salas  |
-| POST   | `/api/rooms/`      | Criar sala    |
-| GET    | `/api/rooms/{id}/` | Detalhar sala |
-| PUT    | `/api/rooms/{id}/` | Atualizar     |
-| DELETE | `/api/rooms/{id}/` | Remover       |
+### 5.3 Integração com Django
 
-## 6.3 **Endpoints de reservas**
+O Spyne roda "dentro" do Django. Uma função `soap_view` recebe a requisição HTTP do Django, passa para a aplicação Spyne processar o XML, e retorna a resposta do Spyne. O decorador `@csrf_exempt` é obrigatório, pois clientes SOAP não enviam tokens CSRF de navegador.
 
-| Método | Endpoint                  | Descrição                  |
-| ------ | ------------------------- | -------------------------- |
-| GET    | `/api/reservations/`      | Listar reservas do usuário |
-| POST   | `/api/reservations/`      | Criar reserva              |
-| GET    | `/api/reservations/{id}/` | Detalhar                   |
-| PUT    | `/api/reservations/{id}/` | Atualizar                  |
-| DELETE | `/api/reservations/{id}/` | Cancelar                   |
+-----
 
-# 7. 🧼 **Endpoints SOAP**
+## 6\. Solução de Infraestrutura: Patch de Compatibilidade Python 3.13
 
-O serviço SOAP oferece funções não CRUD, orientadas a lógica de negócio avançada.
+Um desafio técnico crítico enfrentado foi a incompatibilidade da biblioteca **Spyne (v2.14.0)** com o **Python 3.13**.
 
-## 7.1 **Funções SOAP expostas**
+### 6.1 O Problema
 
-### `getNextAvailableRoom(dateTime)`
+O Python 3.13 removeu definitivamente módulos legados de compatibilidade com Python 2 (especificamente o suporte a `six.moves`), que o Spyne utiliza internamente para importar coleções. Isso causava o erro `ModuleNotFoundError: No module named 'spyne.util.six.moves'`.
 
-Retorna:
+### 6.2 A Solução (Monkey Patch)
 
-* id da sala
-* nome
-* horário disponível mais próximo
+Para evitar a alteração do código-fonte da biblioteca (o que quebraria a portabilidade do projeto e dificultaria o deploy), foi implementada uma técnica de **Monkey Patching** no ponto de entrada da aplicação: **`manage.py`**.
 
-### `getDailySchedule(date)`
+**Implementação:**
+Antes de qualquer comando do Django ser executado, o script intercepta o dicionário de módulos do sistema (`sys.modules`) e injeta manualmente o módulo nativo do Python 3 no caminho antigo que o Spyne espera encontrar.
 
-Retorna:
-
-* lista de reservas do dia
-* horários ocupados x livres
-
-### `countReservationsForRoom(roomId)`
-
-Retorna:
-
-* quantidade total de reservas daquela sala
-
-# 8. 🚪 **API Gateway (Node.js)**
-
-O Gateway atua como **porta única do sistema**, expondo endpoints “amigáveis”:
-
-## 8.1 **Gateway - Autenticação**
-
-| Método | Endpoint                 | Encaminha |
-| ------ | ------------------------ | --------- |
-| POST   | `/gateway/auth/login`    | REST      |
-| POST   | `/gateway/auth/register` | REST      |
-| POST   | `/gateway/auth/logout`   | REST      |
-
-## 8.2 **Gateway - Salas**
-
-| Método | Endpoint         | Encaminha |
-| ------ | ---------------- | --------- |
-| GET    | `/gateway/rooms` | REST      |
-| POST   | `/gateway/rooms` | REST      |
-| …      | etc              |           |
-
-Com **HATEOAS**:
-
-```
-{
-  "rooms": [...],
-  "links": [
-    {"rel": "self", "href": "/gateway/rooms"},
-    {"rel": "reserve", "href": "/gateway/reservations"}
-  ]
-}
+```python
+# Trecho do manage.py
+import collections.abc
+import sys
+# Redireciona a importação legado para o módulo nativo moderno
+sys.modules["spyne.util.six.moves.collections_abc"] = collections.abc
 ```
 
-## 8.3 **Gateway - Reservas**
+Esta solução garante que o sistema rode em ambientes modernos sem a necessidade de forks de bibliotecas ou downgrade da versão do Python.
 
-| Método | Endpoint                | Encaminha |
-| ------ | ----------------------- | --------- |
-| GET    | `/gateway/reservations` | REST      |
-| POST   | `/gateway/reservations` | REST      |
+-----
 
+## 7\. Segurança e Autenticação
 
-## 8.4 **Gateway - SOAP**
+  * **Padrão:** JWT (JSON Web Token).
+  * **Bibliotecas:** `djangorestframework_simplejwt`.
+  * **Configuração:** Tokens de acesso têm validade de 60 minutos e Refresh tokens de 1 dia.
+  * **Proteção de Rotas:** Por padrão (`DEFAULT_PERMISSION_CLASSES`), todas as rotas exigem autenticação (`IsAuthenticated`), exceto as explicitamente abertas (Login, Registro, Swagger).
 
-| Método | Endpoint                             | Descrição  |
-| ------ | ------------------------------------ | ---------- |
-| GET    | `/gateway/soap/next-room?dateTime=`  | Chama SOAP |
-| GET    | `/gateway/soap/daily-schedule?date=` | Chama SOAP |
-| GET    | `/gateway/soap/count?roomId=`        | Chama SOAP |
+-----
 
+## 8\. Testes e Qualidade
 
-# 9. 📋 **Requisitos Funcionais**
+O sistema inclui uma suíte de testes automatizados (`api/tests.py`) que valida:
 
-1. RF001 — O usuário deve poder se cadastrar no sistema.
-2. RF002 — O usuário deve poder realizar login e receber um token JWT.
-3. RF003 — O usuário deve poder listar salas disponíveis.
-4. RF004 — O usuário deve poder criar reservas.
-5. RF005 — O usuário deve poder visualizar suas reservas.
-6. RF006 — O usuário deve poder editar ou cancelar uma reserva.
-7. RF007 — O sistema deve impedir reservas sobrepostas.
-8. RF008 — O usuário deve poder solicitar relatório das salas via SOAP.
-9. RF009 — O gateway deve unificar todas as requisições.
-10. RF010 — As respostas devem incluir HATEOAS no Gateway.
-11. RF011 — O usuário deve usar o front-end para consumir o Gateway.
-
-# 10. 🧱 **Requisitos Não Funcionais**
-
-1. RNF001 — A API REST deve seguir padrões RESTful.
-2. RNF002 — O sistema deve utilizar JWT para autenticação.
-3. RNF003 — A comunicação SOAP deve ser baseada em WSDL válido.
-4. RNF004 — O sistema deve ser modular, com camadas bem definidas.
-5. RNF005 — O Gateway deve lidar com falhas do REST e do SOAP.
-6. RNF006 — O sistema deve ser responsivo e simples para o usuário final.
-7. RNF007 — O banco de dados deve garantir integridade referencial.
-8. RNF008 — O WSDL deve ser documentado e apresentado.
-9. RNF009 — Todas as endpoints devem ser testáveis via Postman/Swagger.
-10. RNF010 — O código deve ser hospedado no GitHub.
-
-# 11. 🔄 **Fluxo Geral do Usuário**
-
-1. Usuário acessa o front-end
-2. Realiza **cadastro** → Gateway → REST
-3. Faz **login** → Gateway → REST
-4. Front guarda o token
-5. Lista salas via Gateway
-6. Escolhe uma sala e um horário
-7. Cria reserva via Gateway → REST
-8. Caso queira relatório, front chama:
-   → Gateway → SOAP → Gateway → Front
-
+1.  **Segurança:** Garante que anônimos não criem salas.
+2.  **Integridade:** Verifica se o cálculo de valor da reserva está correto.
+3.  **Lógica de Conflito:** Tenta criar reservas sobrepostas e assegura que a API rejeita (HTTP 400).
+4.  **Fluxo de Aprovação:** Garante que apenas o dono da sala pode aprovar uma reserva (testes de permissão).
+5.  **SOAP:** Testa a lógica de geração de relatórios diretamente no Service, desacoplando o teste da camada de transporte XML.

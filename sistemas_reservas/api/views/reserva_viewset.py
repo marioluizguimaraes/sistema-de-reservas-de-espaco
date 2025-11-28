@@ -1,3 +1,4 @@
+from django.db import models
 from rest_framework import viewsets, permissions, status, decorators
 from rest_framework.response import Response
 from api.models import Reserva

@@ -16,8 +16,7 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    
-    # Esta linha conecta suas views ao projeto principal:
+
     path('api/', include('api.urls')), 
     
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),

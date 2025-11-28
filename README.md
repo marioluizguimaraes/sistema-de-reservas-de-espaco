@@ -155,3 +155,19 @@ O sistema inclui uma suíte de testes automatizados (`api/tests.py`) que valida:
 3.  **Lógica de Conflito:** Tenta criar reservas sobrepostas e assegura que a API rejeita (HTTP 400).
 4.  **Fluxo de Aprovação:** Garante que apenas o dono da sala pode aprovar uma reserva (testes de permissão).
 5.  **SOAP:** Testa a lógica de geração de relatórios diretamente no Service, desacoplando o teste da camada de transporte XML.
+
+
+
+# Terminal 1 (Django)
+cd sistemas_reservas
+python -m venv env
+.\env\Scripts\activate  # ou source env/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py popular_banco
+python manage.py runserver
+
+# Terminal 2 (Node Gateway)
+cd gateway
+npm install
+node server.js

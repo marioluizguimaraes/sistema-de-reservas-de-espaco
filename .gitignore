@@ -1,46 +1,102 @@
-# ========================
-# 🟢 Node.js (Gateway)
-# ========================
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-package-lock.json  # Opcional: Alguns preferem comitar, outros não. Geralmente comita-se.
-.env               # CRÍTICO: Nunca suba suas senhas/chaves
-
-# ========================
-# 🐍 Python / Django
-# ========================
-*.pyc
+# Byte-compiled / optimized
 __pycache__/
 *.py[cod]
 *$py.class
 
-# Distribuição e builds
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
 build/
 dist/
+downloads/
 eggs/
 .eggs/
 *.egg-info/
+.installed.cfg
 
-# Ambientes Virtuais (Virtualenvs)
+# Virtual environments
 env/
 venv/
-.env/
+ENV/
 .venv/
+env.bak/
+venv.bak/
 
-# Banco de Dados (SQLite local)
-*.sqlite3
+# PyInstaller
+*.manifest
+*.spec
+
+# Logs and coverage
+*.log
+pip-log.txt
+pip-delete-this-directory.txt
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+coverage.xml
+nosetests.xml
+
+# Django
+local_settings.py
 db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+# If you keep user-uploaded media or collected static in repo, remove the lines above.
 
-# Arquivos estáticos e mídia (se forem gerados localmente)
-/static/
-/media/
+# Migrations: normalmente são versionadas — remova o comentário se desejar ignorá-las
+# */migrations/*.py
+# */migrations/*.pyc
 
-# ========================
-# 🖥️ Arquivos de Sistema (Lixo)
-# ========================
-.DS_Store          # Mac
-Thumbs.db          # Windows
-.vscode/           # Configurações do editor (opcional)
-.idea/             # PyCharm / IntelliJ
+# IDEs and editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment files
+.env
+.env.*.local
+
+# Node/npm/yarn
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log
+
+# Build artifacts
+dist/
+build/
+*.egg
+*.egg-info/
+
+# Misc
+*.pyc
+*~
+*.swp
+*.lock
+
+# Ignore Node packages (all locations)
+node_modules/
+**/node_modules/
+
+# npm/yarn logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log
+
+# Optional: tempo de cache do npm
+.npm

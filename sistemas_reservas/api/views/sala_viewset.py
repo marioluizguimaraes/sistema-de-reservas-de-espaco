@@ -12,7 +12,6 @@ class SalaViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Sala.objects.all()
     
-        # agora pode usar /api/salas/?dono=MEU_ID
         minhas = self.request.query_params.get('minhas')
         if minhas == 'true' and self.request.user.is_authenticated:
             queryset = queryset.filter(dono=self.request.user)

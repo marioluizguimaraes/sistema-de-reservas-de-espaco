@@ -1,0 +1,359 @@
+{
+  "info": {
+    "name": "Reservas - CDU-004: Listar e buscar salas",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000/api", "type": "string" },
+    { "key": "access_token", "value": "", "type": "string" },
+    { "key": "user_id", "value": "", "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "Registrar usuário e autenticar",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var ts = Date.now().toString();",
+                  "var body = {",
+                  "    username: 'buscador' + ts,",
+                  "    email: 'busca' + ts + '@mail.com',",
+                  "    password: 'Senha@Valida123',",
+                  "    cpf: '010.020.030-40',",
+                  "    celular: '84933330000'",
+                  "};",
+                  "pm.collectionVariables.set('setup_body', JSON.stringify(body));",
+                  "pm.collectionVariables.set('setup_username', body.username);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Usuário criado (201)\", function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set('user_id', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{{setup_body}}" },
+            "url": {
+              "raw": "{{base_url}}/auth/register/",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register", ""]
+            }
+          }
+        },
+        {
+          "name": "Login para obter token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login bem-sucedido (200)\", function () { pm.response.to.have.status(200); });",
+                  "pm.collectionVariables.set('access_token', pm.response.json().access);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"{{setup_username}}\",\n    \"password\": \"Senha@Valida123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login/",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login", ""]
+            }
+          }
+        },
+        {
+          "name": "Cadastrar sala para testes de busca",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Sala criada (201)\", function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set('sala_id', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"nome\": \"Sala Natal Centro\",\n    \"descricao\": \"Sala para busca\",\n    \"capacidade\": 8,\n    \"rua\": \"Av. Rio Branco\",\n    \"numero\": \"500\",\n    \"bairro\": \"Centro\",\n    \"cidade\": \"Natal\",\n    \"estado\": \"RN\",\n    \"cep\": \"59025-000\",\n    \"preco_por_hora\": \"40.00\",\n    \"disponivel\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/salas/",
+              "host": ["{{base_url}}"],
+              "path": ["salas", ""]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo principal",
+      "item": [
+        {
+          "name": "Listar todas as salas (sem autenticação)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 - Listagem pública funciona\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Resposta é uma lista ou paginada\", function () {",
+                  "    var json = pm.response.json();",
+                  "    var lista = Array.isArray(json) ? json : json.results;",
+                  "    pm.expect(lista).to.be.an('array');",
+                  "    pm.expect(lista.length).to.be.at.least(1);",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/salas/",
+              "host": ["{{base_url}}"],
+              "path": ["salas", ""]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo alternativo - Filtrar por cidade",
+      "item": [
+        {
+          "name": "Buscar salas em Natal/RN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 - Filtro por cidade\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Todas as salas retornadas são de Natal\", function () {",
+                  "    var json = pm.response.json();",
+                  "    var lista = Array.isArray(json) ? json : json.results;",
+                  "    lista.forEach(function(sala) {",
+                  "        pm.expect(sala.cidade).to.equal('Natal');",
+                  "    });",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/salas/?cidade=Natal",
+              "host": ["{{base_url}}"],
+              "path": ["salas", ""],
+              "query": [{ "key": "cidade", "value": "Natal" }]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo alternativo - Filtrar por disponibilidade",
+      "item": [
+        {
+          "name": "Buscar apenas salas disponíveis",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 - Filtro por disponibilidade\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Todas as salas estão disponíveis\", function () {",
+                  "    var json = pm.response.json();",
+                  "    var lista = Array.isArray(json) ? json : json.results;",
+                  "    lista.forEach(function(sala) {",
+                  "        pm.expect(sala.disponivel).to.be.true;",
+                  "    });",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/salas/?disponivel=true",
+              "host": ["{{base_url}}"],
+              "path": ["salas", ""],
+              "query": [{ "key": "disponivel", "value": "true" }]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo alternativo - Listar minhas salas",
+      "item": [
+        {
+          "name": "Listar apenas salas do usuário autenticado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 - Minhas salas\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Lista contém pelo menos a sala cadastrada no setup\", function () {",
+                  "    var json = pm.response.json();",
+                  "    var lista = Array.isArray(json) ? json : json.results;",
+                  "    pm.expect(lista.length).to.be.at.least(1);",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/salas/?minhas=true",
+              "host": ["{{base_url}}"],
+              "path": ["salas", ""],
+              "query": [{ "key": "minhas", "value": "true" }]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo alternativo - Sala inexistente",
+      "item": [
+        {
+          "name": "Buscar sala com ID inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404 - Sala não encontrada\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/salas/999999/",
+              "host": ["{{base_url}}"],
+              "path": ["salas", "999999", ""]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Testes não funcionais",
+      "item": [
+        {
+          "name": "Resposta de listagem retorna dentro do prazo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});",
+                  "pm.test(\"Content-Type é application/json\", function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/salas/",
+              "host": ["{{base_url}}"],
+              "path": ["salas", ""]
+            }
+          }
+        }
+      ]
+    }
+
+  ]
+}

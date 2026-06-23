@@ -1,0 +1,306 @@
+{
+  "info": {
+    "name": "Reservas - CDU-006: Responder reserva (aprovar/rejeitar)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000/api", "type": "string" },
+    { "key": "token_dono", "value": "", "type": "string" },
+    { "key": "token_solicitante", "value": "", "type": "string" },
+    { "key": "token_terceiro", "value": "", "type": "string" },
+    { "key": "sala_id", "value": "", "type": "string" },
+    { "key": "reserva_id", "value": "", "type": "string" },
+    { "key": "reserva_rejeitar_id", "value": "", "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "Registrar dono",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var ts = Date.now().toString();",
+                  "var body = { username: 'donoResp'+ts, email:'donoResp'+ts+'@m.com', password:'Senha@Valida123', cpf:'001.001.001-01', celular:'84900001111' };",
+                  "pm.collectionVariables.set('dono_body', JSON.stringify(body));",
+                  "pm.collectionVariables.set('dono_username', body.username);"
+                ]
+              }
+            },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Dono criado',function(){pm.response.to.have.status(201)});"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{{dono_body}}"}, "url": {"raw":"{{base_url}}/auth/register/","host":["{{base_url}}"],"path":["auth","register",""]}}
+        },
+        {
+          "name": "Login dono",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Login dono',function(){pm.response.to.have.status(200)});","pm.collectionVariables.set('token_dono',pm.response.json().access);"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{\"username\":\"{{dono_username}}\",\"password\":\"Senha@Valida123\"}"}, "url": {"raw":"{{base_url}}/auth/login/","host":["{{base_url}}"],"path":["auth","login",""]}}
+        },
+        {
+          "name": "Criar sala",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Sala criada',function(){pm.response.to.have.status(201)});","pm.collectionVariables.set('sala_id',pm.response.json().id);"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{token_dono}}"}], "body": {"mode":"raw","raw":"{\"nome\":\"Sala CDU-006\",\"descricao\":\"Teste aprovação\",\"capacidade\":4,\"rua\":\"R. Teste\",\"numero\":\"1\",\"bairro\":\"Centro\",\"cidade\":\"Natal\",\"estado\":\"RN\",\"cep\":\"59000-000\",\"preco_por_hora\":\"50.00\",\"disponivel\":true}"}, "url": {"raw":"{{base_url}}/salas/","host":["{{base_url}}"],"path":["salas",""]}}
+        },
+        {
+          "name": "Registrar solicitante",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var ts = Date.now().toString();",
+                  "var body = { username: 'solic006'+ts, email:'solic006'+ts+'@m.com', password:'Senha@Valida123', cpf:'002.002.002-02', celular:'84900002222' };",
+                  "pm.collectionVariables.set('solic_body', JSON.stringify(body));",
+                  "pm.collectionVariables.set('solic_username', body.username);"
+                ]
+              }
+            },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Solicitante criado',function(){pm.response.to.have.status(201)});"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{{solic_body}}"}, "url": {"raw":"{{base_url}}/auth/register/","host":["{{base_url}}"],"path":["auth","register",""]}}
+        },
+        {
+          "name": "Login solicitante",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Login solic',function(){pm.response.to.have.status(200)});","pm.collectionVariables.set('token_solicitante',pm.response.json().access);"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{\"username\":\"{{solic_username}}\",\"password\":\"Senha@Valida123\"}"}, "url": {"raw":"{{base_url}}/auth/login/","host":["{{base_url}}"],"path":["auth","login",""]}}
+        },
+        {
+          "name": "Criar reserva para aprovar",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Reserva criada',function(){pm.response.to.have.status(201)});","pm.collectionVariables.set('reserva_id',pm.response.json().id);"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{token_solicitante}}"}], "body": {"mode":"raw","raw":"{\"sala\":{{sala_id}},\"data_inicio\":\"2030-12-01T09:00:00\",\"data_fim\":\"2030-12-01T10:00:00\",\"forma_pagamento\":\"PIX\"}"}, "url": {"raw":"{{base_url}}/reservas/","host":["{{base_url}}"],"path":["reservas",""]}}
+        },
+        {
+          "name": "Criar reserva para rejeitar",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Reserva 2 criada',function(){pm.response.to.have.status(201)});","pm.collectionVariables.set('reserva_rejeitar_id',pm.response.json().id);"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{token_solicitante}}"}], "body": {"mode":"raw","raw":"{\"sala\":{{sala_id}},\"data_inicio\":\"2030-12-02T09:00:00\",\"data_fim\":\"2030-12-02T10:00:00\",\"forma_pagamento\":\"PIX\"}"}, "url": {"raw":"{{base_url}}/reservas/","host":["{{base_url}}"],"path":["reservas",""]}}
+        },
+        {
+          "name": "Registrar terceiro (sem vínculo com a sala)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var ts = Date.now().toString();",
+                  "var body = { username: 'terceiro006'+ts, email:'terc006'+ts+'@m.com', password:'Senha@Valida123', cpf:'003.003.003-03', celular:'84900003333' };",
+                  "pm.collectionVariables.set('terc_body', JSON.stringify(body));",
+                  "pm.collectionVariables.set('terc_username', body.username);"
+                ]
+              }
+            },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Terceiro criado',function(){pm.response.to.have.status(201)});"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{{terc_body}}"}, "url": {"raw":"{{base_url}}/auth/register/","host":["{{base_url}}"],"path":["auth","register",""]}}
+        },
+        {
+          "name": "Login terceiro",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Login terceiro',function(){pm.response.to.have.status(200)});","pm.collectionVariables.set('token_terceiro',pm.response.json().access);"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{\"username\":\"{{terc_username}}\",\"password\":\"Senha@Valida123\"}"}, "url": {"raw":"{{base_url}}/auth/login/","host":["{{base_url}}"],"path":["auth","login",""]}}
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo principal - Aprovar reserva",
+      "item": [
+        {
+          "name": "Dono aprova a reserva",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 - Reserva aprovada\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Mensagem confirma aprovação\", function () {",
+                  "    var body = JSON.stringify(pm.response.json()).toLowerCase();",
+                  "    pm.expect(body).to.include('aprovada');",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_dono}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"acao\": \"APROVAR\"}" },
+            "url": { "raw": "{{base_url}}/reservas/{{reserva_id}}/responder/", "host": ["{{base_url}}"], "path": ["reservas", "{{reserva_id}}", "responder", ""] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo principal - Rejeitar reserva",
+      "item": [
+        {
+          "name": "Dono rejeita a reserva",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 - Reserva rejeitada\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Mensagem confirma rejeição\", function () {",
+                  "    var body = JSON.stringify(pm.response.json()).toLowerCase();",
+                  "    pm.expect(body).to.include('rejeitada');",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_dono}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"acao\": \"REJEITAR\"}" },
+            "url": { "raw": "{{base_url}}/reservas/{{reserva_rejeitar_id}}/responder/", "host": ["{{base_url}}"], "path": ["reservas", "{{reserva_rejeitar_id}}", "responder", ""] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo alternativo - Terceiro tenta responder",
+      "item": [
+        {
+          "name": "Usuário não-dono tenta aprovar a reserva",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403 - Apenas o dono pode responder\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_terceiro}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"acao\": \"APROVAR\"}" },
+            "url": { "raw": "{{base_url}}/reservas/{{reserva_id}}/responder/", "host": ["{{base_url}}"], "path": ["reservas", "{{reserva_id}}", "responder", ""] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo alternativo - Ação inválida",
+      "item": [
+        {
+          "name": "Enviar ação desconhecida",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400 - Ação inválida\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Erro menciona ação inválida\", function () {",
+                  "    var body = JSON.stringify(pm.response.json()).toLowerCase();",
+                  "    pm.expect(body).to.satisfy(function(b){",
+                  "        return b.includes('inválida') || b.includes('invalida') || b.includes('ação') || b.includes('acao');",
+                  "    });",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_dono}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"acao\": \"IGNORAR\"}" },
+            "url": { "raw": "{{base_url}}/reservas/{{reserva_id}}/responder/", "host": ["{{base_url}}"], "path": ["reservas", "{{reserva_id}}", "responder", ""] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Testes não funcionais",
+      "item": [
+        {
+          "name": "Verificar status atualizado na reserva após aprovação",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 - Detalhes da reserva\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Status da reserva é APROVADA\", function () {",
+                  "    pm.expect(pm.response.json().status).to.equal('APROVADA');",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_dono}}" }],
+            "url": { "raw": "{{base_url}}/reservas/{{reserva_id}}/", "host": ["{{base_url}}"], "path": ["reservas", "{{reserva_id}}", ""] }
+          }
+        }
+      ]
+    }
+
+  ]
+}

@@ -1,0 +1,289 @@
+{
+  "info": {
+    "name": "Reservas - CDU-001: Realizar cadastro",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000/api", "type": "string" },
+    { "key": "reg_username", "value": "", "type": "string" },
+    { "key": "reg_email", "value": "", "type": "string" },
+    { "key": "reg_body", "value": "", "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "Fluxo principal",
+      "item": [
+        {
+          "name": "Cadastrar usuário com dados válidos",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var ts = Date.now().toString();",
+                  "var username = 'usuario' + ts;",
+                  "var email = 'usuario' + ts + '@mail.com';",
+                  "pm.collectionVariables.set('reg_username', username);",
+                  "pm.collectionVariables.set('reg_email', email);",
+                  "var body = {",
+                  "    username: username,",
+                  "    email: email,",
+                  "    password: 'Senha@Valida123',",
+                  "    cpf: '111.222.333-44',",
+                  "    celular: '84999990000'",
+                  "};",
+                  "pm.collectionVariables.set('reg_body', JSON.stringify(body));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201 - Cadastro criado\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Resposta é um JSON válido\", function () {",
+                  "    pm.response.to.have.jsonBody();",
+                  "});",
+                  "pm.test(\"Senha não é retornada na resposta\", function () {",
+                  "    pm.expect(pm.response.text()).to.not.include('Senha@Valida123');",
+                  "});",
+                  "pm.test(\"Campo password ausente do retorno\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.not.have.property('password');",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{{reg_body}}" },
+            "url": {
+              "raw": "{{base_url}}/auth/register/",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register", ""]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo alternativo - Username duplicado",
+      "item": [
+        {
+          "name": "Cadastrar com username já existente",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var username = pm.collectionVariables.get('reg_username');",
+                  "var ts = Date.now().toString();",
+                  "var body = {",
+                  "    username: username,",
+                  "    email: 'outro' + ts + '@mail.com',",
+                  "    password: 'Senha@Valida123',",
+                  "    cpf: '222.333.444-55',",
+                  "    celular: '84988880000'",
+                  "};",
+                  "pm.collectionVariables.set('reg_body', JSON.stringify(body));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400 - Username duplicado\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Erro menciona o campo username\", function () {",
+                  "    pm.expect(JSON.stringify(pm.response.json()).toLowerCase()).to.include('username');",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{{reg_body}}" },
+            "url": {
+              "raw": "{{base_url}}/auth/register/",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register", ""]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo alternativo - E-mail duplicado",
+      "item": [
+        {
+          "name": "Cadastrar com e-mail já existente",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var email = pm.collectionVariables.get('reg_email');",
+                  "var ts = Date.now().toString();",
+                  "var body = {",
+                  "    username: 'outroUser' + ts,",
+                  "    email: email,",
+                  "    password: 'Senha@Valida123',",
+                  "    cpf: '333.444.555-66',",
+                  "    celular: '84977770000'",
+                  "};",
+                  "pm.collectionVariables.set('reg_body', JSON.stringify(body));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400 - Email duplicado\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Erro menciona o campo email\", function () {",
+                  "    pm.expect(JSON.stringify(pm.response.json()).toLowerCase()).to.include('email');",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{{reg_body}}" },
+            "url": {
+              "raw": "{{base_url}}/auth/register/",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register", ""]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo alternativo - Campos obrigatórios ausentes",
+      "item": [
+        {
+          "name": "Cadastrar sem CPF",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400 - CPF obrigatório\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Erro menciona o campo cpf\", function () {",
+                  "    pm.expect(JSON.stringify(pm.response.json()).toLowerCase()).to.include('cpf');",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"semCpf\",\n    \"email\": \"semcpf@mail.com\",\n    \"password\": \"Senha@Valida123\",\n    \"celular\": \"84900000000\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register/",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register", ""]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Testes não funcionais",
+      "item": [
+        {
+          "name": "Senha não é exposta em nenhum cenário de resposta",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var ts = Date.now().toString();",
+                  "var body = {",
+                  "    username: 'nfUser' + ts,",
+                  "    email: 'nf' + ts + '@mail.com',",
+                  "    password: 'SenhaNaoFuncional@1',",
+                  "    cpf: '444.555.666-77',",
+                  "    celular: '84955550000'",
+                  "};",
+                  "pm.collectionVariables.set('reg_body', JSON.stringify(body));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Senha em texto puro não aparece no body\", function () {",
+                  "    pm.expect(pm.response.text()).to.not.include('SenhaNaoFuncional@1');",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{{reg_body}}" },
+            "url": {
+              "raw": "{{base_url}}/auth/register/",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register", ""]
+            }
+          }
+        }
+      ]
+    }
+
+  ]
+}

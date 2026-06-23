@@ -1,0 +1,374 @@
+{
+  "info": {
+    "name": "Reservas - CDU-005: Solicitar reserva",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000/api", "type": "string" },
+    { "key": "token_dono", "value": "", "type": "string" },
+    { "key": "token_solicitante", "value": "", "type": "string" },
+    { "key": "sala_id", "value": "", "type": "string" },
+    { "key": "reserva_id", "value": "", "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "Registrar dono da sala",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var ts = Date.now().toString();",
+                  "var body = {",
+                  "    username: 'donoReserva' + ts,",
+                  "    email: 'donoR' + ts + '@mail.com',",
+                  "    password: 'Senha@Valida123',",
+                  "    cpf: '001.002.003-04',",
+                  "    celular: '84944440000'",
+                  "};",
+                  "pm.collectionVariables.set('dono_body', JSON.stringify(body));",
+                  "pm.collectionVariables.set('dono_username', body.username);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Dono criado (201)\", function () { pm.response.to.have.status(201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{{dono_body}}" },
+            "url": { "raw": "{{base_url}}/auth/register/", "host": ["{{base_url}}"], "path": ["auth", "register", ""] }
+          }
+        },
+        {
+          "name": "Login do dono",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login dono (200)\", function () { pm.response.to.have.status(200); });",
+                  "pm.collectionVariables.set('token_dono', pm.response.json().access);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n    \"username\": \"{{dono_username}}\",\n    \"password\": \"Senha@Valida123\"\n}" },
+            "url": { "raw": "{{base_url}}/auth/login/", "host": ["{{base_url}}"], "path": ["auth", "login", ""] }
+          }
+        },
+        {
+          "name": "Criar sala para reservar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Sala criada (201)\", function () { pm.response.to.have.status(201); });",
+                  "pm.collectionVariables.set('sala_id', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_dono}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"nome\": \"Sala para Reservar\",\n    \"descricao\": \"Sala de teste de reserva\",\n    \"capacidade\": 6,\n    \"rua\": \"Rua da Reserva\",\n    \"numero\": \"10\",\n    \"bairro\": \"Bairro Z\",\n    \"cidade\": \"Natal\",\n    \"estado\": \"RN\",\n    \"cep\": \"59010-000\",\n    \"preco_por_hora\": \"100.00\",\n    \"disponivel\": true\n}"
+            },
+            "url": { "raw": "{{base_url}}/salas/", "host": ["{{base_url}}"], "path": ["salas", ""] }
+          }
+        },
+        {
+          "name": "Registrar solicitante",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var ts = Date.now().toString();",
+                  "var body = {",
+                  "    username: 'solicitante' + ts,",
+                  "    email: 'solic' + ts + '@mail.com',",
+                  "    password: 'Senha@Valida123',",
+                  "    cpf: '100.200.300-00',",
+                  "    celular: '84955551111'",
+                  "};",
+                  "pm.collectionVariables.set('solic_body', JSON.stringify(body));",
+                  "pm.collectionVariables.set('solic_username', body.username);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Solicitante criado (201)\", function () { pm.response.to.have.status(201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{{solic_body}}" },
+            "url": { "raw": "{{base_url}}/auth/register/", "host": ["{{base_url}}"], "path": ["auth", "register", ""] }
+          }
+        },
+        {
+          "name": "Login do solicitante",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login solicitante (200)\", function () { pm.response.to.have.status(200); });",
+                  "pm.collectionVariables.set('token_solicitante', pm.response.json().access);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n    \"username\": \"{{solic_username}}\",\n    \"password\": \"Senha@Valida123\"\n}" },
+            "url": { "raw": "{{base_url}}/auth/login/", "host": ["{{base_url}}"], "path": ["auth", "login", ""] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo principal",
+      "item": [
+        {
+          "name": "Solicitar reserva com dados válidos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201 - Reserva criada\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Status da reserva é PENDENTE_APROVACAO\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.equal('PENDENTE_APROVACAO');",
+                  "    pm.collectionVariables.set('reserva_id', json.id);",
+                  "});",
+                  "pm.test(\"Valor total calculado automaticamente\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(parseFloat(json.valor_total)).to.equal(200.00);",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_solicitante}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"sala\": {{sala_id}},\n    \"data_inicio\": \"2030-08-01T10:00:00\",\n    \"data_fim\": \"2030-08-01T12:00:00\",\n    \"forma_pagamento\": \"PIX\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/reservas/", "host": ["{{base_url}}"], "path": ["reservas", ""] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo alternativo - Data de início posterior ao fim",
+      "item": [
+        {
+          "name": "Solicitar reserva com data_inicio >= data_fim",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400 - Datas inválidas\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Erro de validação de data\", function () {",
+                  "    var body = JSON.stringify(pm.response.json()).toLowerCase();",
+                  "    pm.expect(body).to.satisfy(function(b) {",
+                  "        return b.includes('data') || b.includes('início') || b.includes('inicio') || b.includes('fim');",
+                  "    });",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_solicitante}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"sala\": {{sala_id}},\n    \"data_inicio\": \"2030-09-01T14:00:00\",\n    \"data_fim\": \"2030-09-01T12:00:00\",\n    \"forma_pagamento\": \"PIX\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/reservas/", "host": ["{{base_url}}"], "path": ["reservas", ""] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo alternativo - Conflito de horário",
+      "item": [
+        {
+          "name": "Solicitar reserva em horário já ocupado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400 - Conflito de horário\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Erro menciona indisponibilidade\", function () {",
+                  "    var body = JSON.stringify(pm.response.json()).toLowerCase();",
+                  "    pm.expect(body).to.satisfy(function(b) {",
+                  "        return b.includes('indisponível') || b.includes('indisponivel') || b.includes('horário') || b.includes('conflict');",
+                  "    });",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_solicitante}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"sala\": {{sala_id}},\n    \"data_inicio\": \"2030-08-01T11:00:00\",\n    \"data_fim\": \"2030-08-01T13:00:00\",\n    \"forma_pagamento\": \"PIX\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/reservas/", "host": ["{{base_url}}"], "path": ["reservas", ""] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo alternativo - Sem autenticação",
+      "item": [
+        {
+          "name": "Solicitar reserva sem token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401 - Autenticação necessária\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"sala\": {{sala_id}},\n    \"data_inicio\": \"2030-10-01T10:00:00\",\n    \"data_fim\": \"2030-10-01T12:00:00\",\n    \"forma_pagamento\": \"PIX\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/reservas/", "host": ["{{base_url}}"], "path": ["reservas", ""] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Testes não funcionais",
+      "item": [
+        {
+          "name": "Valor total calculado corretamente para 3 horas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201 - Reserva criada\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Valor total = 3h × R$100/h = R$300\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(parseFloat(json.valor_total)).to.equal(300.00);",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_solicitante}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"sala\": {{sala_id}},\n    \"data_inicio\": \"2030-11-01T08:00:00\",\n    \"data_fim\": \"2030-11-01T11:00:00\",\n    \"forma_pagamento\": \"CARTAO_CREDITO\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/reservas/", "host": ["{{base_url}}"], "path": ["reservas", ""] }
+          }
+        }
+      ]
+    }
+
+  ]
+}

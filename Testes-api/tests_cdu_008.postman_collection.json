@@ -1,0 +1,325 @@
+{
+  "info": {
+    "name": "Reservas - CDU-008: Gerenciar sala (editar/excluir)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000/api", "type": "string" },
+    { "key": "token_dono", "value": "", "type": "string" },
+    { "key": "token_outro", "value": "", "type": "string" },
+    { "key": "sala_id", "value": "", "type": "string" },
+    { "key": "sala_excluir_id", "value": "", "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "Registrar dono",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var ts = Date.now().toString();",
+                  "var body = { username:'donoGerenc'+ts, email:'donoGer'+ts+'@m.com', password:'Senha@Valida123', cpf:'800.800.800-80', celular:'84900080800' };",
+                  "pm.collectionVariables.set('dono_body', JSON.stringify(body));",
+                  "pm.collectionVariables.set('dono_username', body.username);"
+                ]
+              }
+            },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Dono criado',function(){pm.response.to.have.status(201)});"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{{dono_body}}"}, "url": {"raw":"{{base_url}}/auth/register/","host":["{{base_url}}"],"path":["auth","register",""]}}
+        },
+        {
+          "name": "Login dono",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Login dono',function(){pm.response.to.have.status(200)});","pm.collectionVariables.set('token_dono',pm.response.json().access);"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{\"username\":\"{{dono_username}}\",\"password\":\"Senha@Valida123\"}"}, "url": {"raw":"{{base_url}}/auth/login/","host":["{{base_url}}"],"path":["auth","login",""]}}
+        },
+        {
+          "name": "Criar sala para editar",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Sala criada',function(){pm.response.to.have.status(201)});","pm.collectionVariables.set('sala_id',pm.response.json().id);"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{token_dono}}"}], "body": {"mode":"raw","raw":"{\"nome\":\"Sala Original CDU-008\",\"descricao\":\"Antes da edição\",\"capacidade\":5,\"rua\":\"R. Antiga\",\"numero\":\"1\",\"bairro\":\"Centro\",\"cidade\":\"Natal\",\"estado\":\"RN\",\"cep\":\"59000-080\",\"preco_por_hora\":\"80.00\",\"disponivel\":true}"}, "url": {"raw":"{{base_url}}/salas/","host":["{{base_url}}"],"path":["salas",""]}}
+        },
+        {
+          "name": "Criar sala para excluir",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Sala para excluir criada',function(){pm.response.to.have.status(201)});","pm.collectionVariables.set('sala_excluir_id',pm.response.json().id);"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{token_dono}}"}], "body": {"mode":"raw","raw":"{\"nome\":\"Sala para Excluir\",\"descricao\":\"Será removida\",\"capacidade\":3,\"rua\":\"R. Remoção\",\"numero\":\"2\",\"bairro\":\"Centro\",\"cidade\":\"Natal\",\"estado\":\"RN\",\"cep\":\"59000-081\",\"preco_por_hora\":\"20.00\",\"disponivel\":true}"}, "url": {"raw":"{{base_url}}/salas/","host":["{{base_url}}"],"path":["salas",""]}}
+        },
+        {
+          "name": "Registrar outro usuário",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var ts = Date.now().toString();",
+                  "var body = { username:'outro008'+ts, email:'outro008'+ts+'@m.com', password:'Senha@Valida123', cpf:'900.900.900-90', celular:'84900090900' };",
+                  "pm.collectionVariables.set('outro_body', JSON.stringify(body));",
+                  "pm.collectionVariables.set('outro_username', body.username);"
+                ]
+              }
+            },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Outro criado',function(){pm.response.to.have.status(201)});"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{{outro_body}}"}, "url": {"raw":"{{base_url}}/auth/register/","host":["{{base_url}}"],"path":["auth","register",""]}}
+        },
+        {
+          "name": "Login outro usuário",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Login outro',function(){pm.response.to.have.status(200)});","pm.collectionVariables.set('token_outro',pm.response.json().access);"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{\"username\":\"{{outro_username}}\",\"password\":\"Senha@Valida123\"}"}, "url": {"raw":"{{base_url}}/auth/login/","host":["{{base_url}}"],"path":["auth","login",""]}}
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo principal - Editar sala (atualização parcial)",
+      "item": [
+        {
+          "name": "Dono edita nome e preço da sala (PATCH)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 - Sala atualizada\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Nome atualizado corretamente\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.nome).to.equal('Sala Atualizada CDU-008');",
+                  "});",
+                  "pm.test(\"Preço atualizado corretamente\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(parseFloat(json.preco_por_hora)).to.equal(120.00);",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_dono}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"nome\": \"Sala Atualizada CDU-008\",\n    \"preco_por_hora\": \"120.00\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/salas/{{sala_id}}/", "host": ["{{base_url}}"], "path": ["salas", "{{sala_id}}", ""] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo principal - Marcar sala como indisponível",
+      "item": [
+        {
+          "name": "Dono desativa disponibilidade da sala",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 - Disponibilidade atualizada\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Sala marcada como indisponível\", function () {",
+                  "    pm.expect(pm.response.json().disponivel).to.be.false;",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_dono}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"disponivel\": false}" },
+            "url": { "raw": "{{base_url}}/salas/{{sala_id}}/", "host": ["{{base_url}}"], "path": ["salas", "{{sala_id}}", ""] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo alternativo - Outro usuário tenta editar",
+      "item": [
+        {
+          "name": "Usuário que não é dono tenta editar a sala",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403 - Apenas o dono pode editar\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_outro}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\"nome\": \"Tentativa de Invasão\"}" },
+            "url": { "raw": "{{base_url}}/salas/{{sala_id}}/", "host": ["{{base_url}}"], "path": ["salas", "{{sala_id}}", ""] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo alternativo - Sem autenticação tenta editar",
+      "item": [
+        {
+          "name": "Editar sala sem token de autenticação",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401 - Autenticação necessária\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"nome\": \"Sem Token\"}" },
+            "url": { "raw": "{{base_url}}/salas/{{sala_id}}/", "host": ["{{base_url}}"], "path": ["salas", "{{sala_id}}", ""] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo principal - Excluir sala",
+      "item": [
+        {
+          "name": "Dono exclui a sala",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204 - Sala excluída\", function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_dono}}" }],
+            "url": { "raw": "{{base_url}}/salas/{{sala_excluir_id}}/", "host": ["{{base_url}}"], "path": ["salas", "{{sala_excluir_id}}", ""] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo alternativo - Outro usuário tenta excluir",
+      "item": [
+        {
+          "name": "Usuário que não é dono tenta excluir a sala",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403 - Apenas o dono pode excluir\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_outro}}" }],
+            "url": { "raw": "{{base_url}}/salas/{{sala_id}}/", "host": ["{{base_url}}"], "path": ["salas", "{{sala_id}}", ""] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Testes não funcionais",
+      "item": [
+        {
+          "name": "Sala excluída não aparece mais na listagem",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404 - Sala não encontrada após exclusão\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/salas/{{sala_excluir_id}}/", "host": ["{{base_url}}"], "path": ["salas", "{{sala_excluir_id}}", ""] }
+          }
+        }
+      ]
+    }
+
+  ]
+}

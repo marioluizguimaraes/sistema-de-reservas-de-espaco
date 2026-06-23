@@ -1,0 +1,327 @@
+{
+  "info": {
+    "name": "Reservas - CDU-003: Cadastrar sala",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000/api", "type": "string" },
+    { "key": "access_token", "value": "", "type": "string" },
+    { "key": "sala_id", "value": "", "type": "string" },
+    { "key": "sala_body", "value": "", "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "Registrar e autenticar usuário dono",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var ts = Date.now().toString();",
+                  "var body = {",
+                  "    username: 'donoSala' + ts,",
+                  "    email: 'dono' + ts + '@mail.com',",
+                  "    password: 'Senha@Valida123',",
+                  "    cpf: '555.666.777-88',",
+                  "    celular: '84922220000'",
+                  "};",
+                  "pm.collectionVariables.set('setup_body', JSON.stringify(body));",
+                  "pm.collectionVariables.set('setup_username', body.username);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Usuário criado (201)\", function () { pm.response.to.have.status(201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{{setup_body}}" },
+            "url": {
+              "raw": "{{base_url}}/auth/register/",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register", ""]
+            }
+          }
+        },
+        {
+          "name": "Login para obter token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login bem-sucedido (200)\", function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.collectionVariables.set('access_token', json.access);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"{{setup_username}}\",\n    \"password\": \"Senha@Valida123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login/",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login", ""]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo principal",
+      "item": [
+        {
+          "name": "Cadastrar sala com todos os dados válidos",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var body = {",
+                  "    nome: 'Sala de Reunião A',",
+                  "    descricao: 'Sala equipada com projetor e ar-condicionado.',",
+                  "    capacidade: 10,",
+                  "    rua: 'Rua das Flores',",
+                  "    numero: '123',",
+                  "    bairro: 'Centro',",
+                  "    cidade: 'Natal',",
+                  "    estado: 'RN',",
+                  "    cep: '59000-000',",
+                  "    preco_por_hora: '50.00',",
+                  "    disponivel: true",
+                  "};",
+                  "pm.collectionVariables.set('sala_body', JSON.stringify(body));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201 - Sala criada\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Resposta contém ID da sala\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.be.a('number');",
+                  "    pm.collectionVariables.set('sala_id', json.id);",
+                  "});",
+                  "pm.test(\"Dono é o usuário autenticado\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.dono).to.exist;",
+                  "});",
+                  "pm.test(\"Sala criada como disponível por padrão\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.disponivel).to.be.true;",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{{sala_body}}" },
+            "url": {
+              "raw": "{{base_url}}/salas/",
+              "host": ["{{base_url}}"],
+              "path": ["salas", ""]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo alternativo - Sem autenticação",
+      "item": [
+        {
+          "name": "Tentar cadastrar sala sem token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401 - Autenticação necessária\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"Sala não criada sem autenticação\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.be.undefined;",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"nome\": \"Sala Sem Token\",\n    \"descricao\": \"Teste\",\n    \"capacidade\": 5,\n    \"rua\": \"Rua X\",\n    \"numero\": \"1\",\n    \"bairro\": \"Bairro Y\",\n    \"cidade\": \"Natal\",\n    \"estado\": \"RN\",\n    \"cep\": \"59000-001\",\n    \"preco_por_hora\": \"30.00\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/salas/",
+              "host": ["{{base_url}}"],
+              "path": ["salas", ""]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo alternativo - Campos obrigatórios ausentes",
+      "item": [
+        {
+          "name": "Cadastrar sala sem nome",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400 - Nome obrigatório\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Erro menciona campo nome\", function () {",
+                  "    pm.expect(JSON.stringify(pm.response.json()).toLowerCase()).to.include('nome');",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"descricao\": \"Sem nome\",\n    \"capacidade\": 5,\n    \"rua\": \"Rua X\",\n    \"numero\": \"1\",\n    \"bairro\": \"Bairro Y\",\n    \"cidade\": \"Natal\",\n    \"estado\": \"RN\",\n    \"cep\": \"59000-002\",\n    \"preco_por_hora\": \"30.00\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/salas/",
+              "host": ["{{base_url}}"],
+              "path": ["salas", ""]
+            }
+          }
+        },
+        {
+          "name": "Cadastrar sala com preço inválido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400 - Preço inválido\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"nome\": \"Sala Preco Invalido\",\n    \"descricao\": \"Teste\",\n    \"capacidade\": 5,\n    \"rua\": \"Rua X\",\n    \"numero\": \"1\",\n    \"bairro\": \"Bairro Y\",\n    \"cidade\": \"Natal\",\n    \"estado\": \"RN\",\n    \"cep\": \"59000-003\",\n    \"preco_por_hora\": \"preco_texto\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/salas/",
+              "host": ["{{base_url}}"],
+              "path": ["salas", ""]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Testes não funcionais",
+      "item": [
+        {
+          "name": "Visualizar sala recém-cadastrada",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 - Sala encontrada\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Dados da sala consistentes\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.nome).to.equal('Sala de Reunião A');",
+                  "    pm.expect(json.cidade).to.equal('Natal');",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/salas/{{sala_id}}/",
+              "host": ["{{base_url}}"],
+              "path": ["salas", "{{sala_id}}", ""]
+            }
+          }
+        }
+      ]
+    }
+
+  ]
+}

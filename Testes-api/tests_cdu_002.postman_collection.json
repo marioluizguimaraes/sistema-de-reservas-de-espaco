@@ -1,0 +1,285 @@
+{
+  "info": {
+    "name": "Reservas - CDU-002: Realizar login",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000/api", "type": "string" },
+    { "key": "reg_username", "value": "", "type": "string" },
+    { "key": "reg_password", "value": "Senha@Valida123", "type": "string" },
+    { "key": "reg_body", "value": "", "type": "string" },
+    { "key": "access_token", "value": "", "type": "string" },
+    { "key": "refresh_token", "value": "", "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "Registrar usuário para login",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var ts = Date.now().toString();",
+                  "var username = 'loginUser' + ts;",
+                  "pm.collectionVariables.set('reg_username', username);",
+                  "pm.collectionVariables.set('reg_password', 'Senha@Valida123');",
+                  "var body = {",
+                  "    username: username,",
+                  "    email: 'login' + ts + '@mail.com',",
+                  "    password: 'Senha@Valida123',",
+                  "    cpf: '100.200.300-40',",
+                  "    celular: '84911110000'",
+                  "};",
+                  "pm.collectionVariables.set('reg_body', JSON.stringify(body));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Usuário criado (201)\", function () { pm.response.to.have.status(201); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{{reg_body}}" },
+            "url": {
+              "raw": "{{base_url}}/auth/register/",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register", ""]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo principal",
+      "item": [
+        {
+          "name": "Login com credenciais válidas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 - Login realizado\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Resposta é um JSON válido\", function () {",
+                  "    pm.response.to.have.jsonBody();",
+                  "});",
+                  "pm.test(\"Token de acesso (JWT) retornado\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.access).to.be.a('string').and.not.empty;",
+                  "    pm.expect(json.refresh).to.be.a('string').and.not.empty;",
+                  "    pm.collectionVariables.set('access_token', json.access);",
+                  "    pm.collectionVariables.set('refresh_token', json.refresh);",
+                  "});",
+                  "pm.test(\"Senha não aparece na resposta\", function () {",
+                  "    pm.expect(pm.response.text()).to.not.include('Senha@Valida123');",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"{{reg_username}}\",\n    \"password\": \"{{reg_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login/",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login", ""]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo alternativo - Senha incorreta",
+      "item": [
+        {
+          "name": "Login com senha incorreta",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401 - Credenciais inválidas\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"Nenhum token retornado\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.access).to.be.undefined;",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"{{reg_username}}\",\n    \"password\": \"senhaErrada\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login/",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login", ""]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo alternativo - Usuário inexistente",
+      "item": [
+        {
+          "name": "Login com username que não existe",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401 - Usuário inexistente\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"Nenhum token retornado\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.access).to.be.undefined;",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"usuarioQueNaoExiste_xyz\",\n    \"password\": \"Senha@Valida123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login/",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login", ""]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo alternativo - Renovar token",
+      "item": [
+        {
+          "name": "Renovar access token com refresh token válido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 - Token renovado\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Novo access token retornado\", function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.access).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"refresh\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/refresh/",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "refresh", ""]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Testes não funcionais",
+      "item": [
+        {
+          "name": "Senha não é exposta na resposta de login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Senha em texto puro não aparece na resposta\", function () {",
+                  "    pm.expect(pm.response.text()).to.not.include('Senha@Valida123');",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"{{reg_username}}\",\n    \"password\": \"{{reg_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login/",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login", ""]
+            }
+          }
+        }
+      ]
+    }
+
+  ]
+}

@@ -1,0 +1,275 @@
+{
+  "info": {
+    "name": "Reservas - CDU-007: Cancelar reserva",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000/api", "type": "string" },
+    { "key": "token_dono", "value": "", "type": "string" },
+    { "key": "token_solicitante", "value": "", "type": "string" },
+    { "key": "token_terceiro", "value": "", "type": "string" },
+    { "key": "sala_id", "value": "", "type": "string" },
+    { "key": "reserva_pendente_id", "value": "", "type": "string" },
+    { "key": "reserva_aprovada_id", "value": "", "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "Registrar dono",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var ts = Date.now().toString();",
+                  "var body = { username:'donoCanc'+ts, email:'donoCanc'+ts+'@m.com', password:'Senha@Valida123', cpf:'007.007.007-07', celular:'84900007777' };",
+                  "pm.collectionVariables.set('dono_body', JSON.stringify(body));",
+                  "pm.collectionVariables.set('dono_username', body.username);"
+                ]
+              }
+            },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Dono criado',function(){pm.response.to.have.status(201)});"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{{dono_body}}"}, "url": {"raw":"{{base_url}}/auth/register/","host":["{{base_url}}"],"path":["auth","register",""]}}
+        },
+        {
+          "name": "Login dono",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Login dono',function(){pm.response.to.have.status(200)});","pm.collectionVariables.set('token_dono',pm.response.json().access);"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{\"username\":\"{{dono_username}}\",\"password\":\"Senha@Valida123\"}"}, "url": {"raw":"{{base_url}}/auth/login/","host":["{{base_url}}"],"path":["auth","login",""]}}
+        },
+        {
+          "name": "Criar sala",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Sala criada',function(){pm.response.to.have.status(201)});","pm.collectionVariables.set('sala_id',pm.response.json().id);"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{token_dono}}"}], "body": {"mode":"raw","raw":"{\"nome\":\"Sala CDU-007\",\"descricao\":\"Teste cancelamento\",\"capacidade\":4,\"rua\":\"R. Cancel\",\"numero\":\"7\",\"bairro\":\"Centro\",\"cidade\":\"Natal\",\"estado\":\"RN\",\"cep\":\"59000-070\",\"preco_por_hora\":\"60.00\",\"disponivel\":true}"}, "url": {"raw":"{{base_url}}/salas/","host":["{{base_url}}"],"path":["salas",""]}}
+        },
+        {
+          "name": "Registrar solicitante",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var ts = Date.now().toString();",
+                  "var body = { username:'solicCanc'+ts, email:'solicCanc'+ts+'@m.com', password:'Senha@Valida123', cpf:'008.008.008-08', celular:'84900008888' };",
+                  "pm.collectionVariables.set('solic_body', JSON.stringify(body));",
+                  "pm.collectionVariables.set('solic_username', body.username);"
+                ]
+              }
+            },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Solicitante criado',function(){pm.response.to.have.status(201)});"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{{solic_body}}"}, "url": {"raw":"{{base_url}}/auth/register/","host":["{{base_url}}"],"path":["auth","register",""]}}
+        },
+        {
+          "name": "Login solicitante",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Login solic',function(){pm.response.to.have.status(200)});","pm.collectionVariables.set('token_solicitante',pm.response.json().access);"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{\"username\":\"{{solic_username}}\",\"password\":\"Senha@Valida123\"}"}, "url": {"raw":"{{base_url}}/auth/login/","host":["{{base_url}}"],"path":["auth","login",""]}}
+        },
+        {
+          "name": "Criar reserva pendente",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Reserva pendente criada',function(){pm.response.to.have.status(201)});","pm.collectionVariables.set('reserva_pendente_id',pm.response.json().id);"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{token_solicitante}}"}], "body": {"mode":"raw","raw":"{\"sala\":{{sala_id}},\"data_inicio\":\"2031-01-10T09:00:00\",\"data_fim\":\"2031-01-10T10:00:00\",\"forma_pagamento\":\"PIX\"}"}, "url": {"raw":"{{base_url}}/reservas/","host":["{{base_url}}"],"path":["reservas",""]}}
+        },
+        {
+          "name": "Criar reserva que será aprovada",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Reserva aprovada criada',function(){pm.response.to.have.status(201)});","pm.collectionVariables.set('reserva_aprovada_id',pm.response.json().id);"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{token_solicitante}}"}], "body": {"mode":"raw","raw":"{\"sala\":{{sala_id}},\"data_inicio\":\"2031-02-10T09:00:00\",\"data_fim\":\"2031-02-10T10:00:00\",\"forma_pagamento\":\"PIX\"}"}, "url": {"raw":"{{base_url}}/reservas/","host":["{{base_url}}"],"path":["reservas",""]}}
+        },
+        {
+          "name": "Dono aprova reserva do fluxo alternativo",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Reserva aprovada',function(){pm.response.to.have.status(200)});"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"},{"key":"Authorization","value":"Bearer {{token_dono}}"}], "body": {"mode":"raw","raw":"{\"acao\":\"APROVAR\"}"}, "url": {"raw":"{{base_url}}/reservas/{{reserva_aprovada_id}}/responder/","host":["{{base_url}}"],"path":["reservas","{{reserva_aprovada_id}}","responder",""]}}
+        },
+        {
+          "name": "Registrar terceiro",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var ts = Date.now().toString();",
+                  "var body = { username:'tercCanc'+ts, email:'tercCanc'+ts+'@m.com', password:'Senha@Valida123', cpf:'009.009.009-09', celular:'84900009999' };",
+                  "pm.collectionVariables.set('terc_body', JSON.stringify(body));",
+                  "pm.collectionVariables.set('terc_username', body.username);"
+                ]
+              }
+            },
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Terceiro criado',function(){pm.response.to.have.status(201)});"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{{terc_body}}"}, "url": {"raw":"{{base_url}}/auth/register/","host":["{{base_url}}"],"path":["auth","register",""]}}
+        },
+        {
+          "name": "Login terceiro",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Login terceiro',function(){pm.response.to.have.status(200)});","pm.collectionVariables.set('token_terceiro',pm.response.json().access);"] } }
+          ],
+          "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{\"username\":\"{{terc_username}}\",\"password\":\"Senha@Valida123\"}"}, "url": {"raw":"{{base_url}}/auth/login/","host":["{{base_url}}"],"path":["auth","login",""]}}
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo principal - Cancelar reserva pendente",
+      "item": [
+        {
+          "name": "Solicitante cancela sua reserva PENDENTE",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 - Reserva cancelada\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Mensagem confirma cancelamento\", function () {",
+                  "    var body = JSON.stringify(pm.response.json()).toLowerCase();",
+                  "    pm.expect(body).to.include('cancelada');",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_solicitante}}" }
+            ],
+            "body": { "mode": "raw", "raw": "" },
+            "url": { "raw": "{{base_url}}/reservas/{{reserva_pendente_id}}/cancelar/", "host": ["{{base_url}}"], "path": ["reservas", "{{reserva_pendente_id}}", "cancelar", ""] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo alternativo - Terceiro tenta cancelar",
+      "item": [
+        {
+          "name": "Usuário que não é o solicitante tenta cancelar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403 - Apenas o solicitante pode cancelar\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_terceiro}}" }
+            ],
+            "body": { "mode": "raw", "raw": "" },
+            "url": { "raw": "{{base_url}}/reservas/{{reserva_aprovada_id}}/cancelar/", "host": ["{{base_url}}"], "path": ["reservas", "{{reserva_aprovada_id}}", "cancelar", ""] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Fluxo alternativo - Cancelar reserva já cancelada",
+      "item": [
+        {
+          "name": "Tentar cancelar reserva que já foi cancelada",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400 - Não é possível cancelar novamente\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Erro menciona impossibilidade de cancelar\", function () {",
+                  "    var body = JSON.stringify(pm.response.json()).toLowerCase();",
+                  "    pm.expect(body).to.satisfy(function(b){",
+                  "        return b.includes('cancelar') || b.includes('impossível') || b.includes('impossivel') || b.includes('não é possível');",
+                  "    });",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token_solicitante}}" }
+            ],
+            "body": { "mode": "raw", "raw": "" },
+            "url": { "raw": "{{base_url}}/reservas/{{reserva_pendente_id}}/cancelar/", "host": ["{{base_url}}"], "path": ["reservas", "{{reserva_pendente_id}}", "cancelar", ""] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Testes não funcionais",
+      "item": [
+        {
+          "name": "Status da reserva é CANCELADA após cancelamento",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200 - Detalhes da reserva\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Status da reserva é CANCELADA\", function () {",
+                  "    pm.expect(pm.response.json().status).to.equal('CANCELADA');",
+                  "});",
+                  "pm.test(\"Tempo de resposta abaixo de 2000ms\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_solicitante}}" }],
+            "url": { "raw": "{{base_url}}/reservas/{{reserva_pendente_id}}/", "host": ["{{base_url}}"], "path": ["reservas", "{{reserva_pendente_id}}", ""] }
+          }
+        }
+      ]
+    }
+
+  ]
+}
